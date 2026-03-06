@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace GSMdtTools.Decoders
@@ -8,9 +9,6 @@ namespace GSMdtTools.Decoders
     public class MdtDecoder : IDecoder
     {
         private readonly Stream mdtStream;
-
-        private ushort messageCount = 0;
-        private ushort invalidOffsets = 0;
 
         GSOperation[] gsOps = {
             new GSOperation("CodeProc_00", 0),
@@ -143,6 +141,402 @@ namespace GSMdtTools.Decoders
             new GSOperation("CodeProc_7F", 1),
         };
 
+        Dictionary<string, string> EnToHalfMap = new Dictionary<string, string>
+        {
+            {
+                "１",
+                "1"
+            },
+            {
+                "２",
+                "2"
+            },
+            {
+                "３",
+                "3"
+            },
+            {
+                "４",
+                "4"
+            },
+            {
+                "５",
+                "5"
+            },
+            {
+                "６",
+                "6"
+            },
+            {
+                "７",
+                "7"
+            },
+            {
+                "８",
+                "8"
+            },
+            {
+                "９",
+                "9"
+            },
+            {
+                "０",
+                "0"
+            },
+            {
+                "Ａ",
+                "A"
+            },
+            {
+                "Ｂ",
+                "B"
+            },
+            {
+                "Ｃ",
+                "C"
+            },
+            {
+                "Ｄ",
+                "D"
+            },
+            {
+                "Ｅ",
+                "E"
+            },
+            {
+                "Ｆ",
+                "F"
+            },
+            {
+                "Ｇ",
+                "G"
+            },
+            {
+                "Ｈ",
+                "H"
+            },
+            {
+                "Ｉ",
+                "I"
+            },
+            {
+                "Ｊ",
+                "J"
+            },
+            {
+                "Ｋ",
+                "K"
+            },
+            {
+                "Ｌ",
+                "L"
+            },
+            {
+                "Ｍ",
+                "M"
+            },
+            {
+                "Ｎ",
+                "N"
+            },
+            {
+                "Ｏ",
+                "O"
+            },
+            {
+                "Ｐ",
+                "P"
+            },
+            {
+                "Ｑ",
+                "Q"
+            },
+            {
+                "Ｒ",
+                "R"
+            },
+            {
+                "Ｓ",
+                "S"
+            },
+            {
+                "Ｔ",
+                "T"
+            },
+            {
+                "Ｕ",
+                "U"
+            },
+            {
+                "Ｖ",
+                "V"
+            },
+            {
+                "Ｗ",
+                "W"
+            },
+            {
+                "Ｘ",
+                "X"
+            },
+            {
+                "Ｙ",
+                "Y"
+            },
+            {
+                "Ｚ",
+                "Z"
+            },
+            {
+                "ａ",
+                "a"
+            },
+            {
+                "ｂ",
+                "b"
+            },
+            {
+                "ｃ",
+                "c"
+            },
+            {
+                "ｄ",
+                "d"
+            },
+            {
+                "ｅ",
+                "e"
+            },
+            {
+                "ｆ",
+                "f"
+            },
+            {
+                "ｇ",
+                "g"
+            },
+            {
+                "ｈ",
+                "h"
+            },
+            {
+                "ｉ",
+                "i"
+            },
+            {
+                "ｊ",
+                "j"
+            },
+            {
+                "ｋ",
+                "k"
+            },
+            {
+                "ｌ",
+                "l"
+            },
+            {
+                "ｍ",
+                "m"
+            },
+            {
+                "ｎ",
+                "n"
+            },
+            {
+                "ｏ",
+                "o"
+            },
+            {
+                "ｐ",
+                "p"
+            },
+            {
+                "ｑ",
+                "q"
+            },
+            {
+                "ｒ",
+                "r"
+            },
+            {
+                "ｓ",
+                "s"
+            },
+            {
+                "ｔ",
+                "t"
+            },
+            {
+                "ｕ",
+                "u"
+            },
+            {
+                "ｖ",
+                "v"
+            },
+            {
+                "ｗ",
+                "w"
+            },
+            {
+                "ｘ",
+                "x"
+            },
+            {
+                "ｙ",
+                "y"
+            },
+            {
+                "ｚ",
+                "z"
+            },
+            {
+                "\u3000",
+                " "
+            },
+            {
+                "．",
+                "."
+            },
+            {
+                "，",
+                ","
+            },
+            {
+                "＇",
+                "'"
+            },
+            {
+                "！",
+                "!"
+            },
+            {
+                "（",
+                "("
+            },
+            {
+                "）",
+                ")"
+            },
+            {
+                "－",
+                "-"
+            },
+            {
+                "／",
+                "/"
+            },
+            {
+                "？",
+                "?"
+            },
+            {
+                "∠",
+                "_"
+            },
+            {
+                "［",
+                "["
+            },
+            {
+                "］",
+                "]"
+            },
+            {
+                "“",
+                "\""
+            },
+            {
+                "”",
+                "\""
+            },
+            {
+                "＂",
+                "\""
+            },
+            {
+                "―",
+                "-"
+            },
+            {
+                "‘",
+                "'"
+            },
+            {
+                "’",
+                "'"
+            },
+            {
+                "：",
+                ":"
+            },
+            {
+                "＊",
+                "*"
+            },
+            {
+                "；",
+                ";"
+            },
+            {
+                "＄",
+                "$"
+            },
+            {
+                "Ы",
+                "©"
+            },
+            {
+                "∋",
+                "è"
+            },
+            {
+                "∈",
+                "é"
+            },
+            {
+                "∀",
+                "á"
+            },
+            {
+                "∧",
+                "à"
+            },
+            {
+                "⊆",
+                "ç"
+            },
+            {
+                "⊂",
+                "Ç"
+            },
+            {
+                "Ц",
+                "û"
+            },
+            {
+                "↑",
+                "î"
+            },
+            {
+                "α",
+                "â"
+            },
+            {
+                "л",
+                "ñ"
+            },
+            {
+                "↓",
+                "ï"
+            },
+            {
+                "ε",
+                "ê"
+            }
+        };
+
         public MdtDecoder(Stream inputStream)
         {
             if (inputStream.CanRead)
@@ -155,125 +549,180 @@ namespace GSMdtTools.Decoders
             }
         }
 
-        public ushort GetMessageCount()
+        public enum MdtEntryKind
         {
-            if (messageCount == default(ushort))
+            Message,
+            Label
+        }
+
+        public sealed class MdtEntry
+        {
+            public ushort Index { get; set; }
+            public uint RawValue { get; set; }
+            public MdtEntryKind Kind { get; set; }
+
+            // For Message entries
+            public uint MessageWordOffset { get; set; }
+
+            // For Label entries
+            public ushort TargetMessageIndex { get; set; }
+            public ushort ByteOffsetWithinMessage { get; set; }
+            public uint LabelWordOffset { get; set; }
+        }
+
+        private void DecodeMessage(ushort[] messageData, uint start, uint end, List<IGSToken> tokens)
+        {
+            var sb = new StringBuilder();
+            uint pos = start;
+
+            while (pos < end)
             {
-                using (var reader = new BinaryReader(mdtStream, Encoding.UTF8, true))
+                ushort word = messageData[pos];
+
+                if (word >= 128)
                 {
-                    messageCount = reader.ReadUInt16();
+                    ushort ch = (ushort)(word - 128);
+                    sb.Append(EnToHalfMap.TryGetValue(char.ConvertFromUtf32(ch), out string mapped) ? mapped : char.ConvertFromUtf32(ch));
+                    pos++;
+                    continue;
+                }
 
-                    long previousPos = mdtStream.Position;
+                if (sb.Length > 0)
+                {
+                    tokens.Add(new GSStringToken(sb.ToString()));
+                    sb.Clear();
+                }
 
-                    // Skip dummy
-                    _ = reader.ReadUInt16();
+                ushort opcode = word;
 
-                    // Check if offsets are valid :-)
-                    for (int i = 0; i < messageCount; i++)
+                if (opcode >= gsOps.Length)
+                {
+                    throw new InvalidDataException($"Unknown opcode 0x{opcode:X4} at message word index {pos}");
+                }
+
+                ushort argCount = gsOps[opcode].ArgCount;
+
+                if (pos + argCount > end)
+                {
+                    throw new InvalidDataException(
+                        $"Opcode 0x{opcode:X4} at word index {pos} exceeds message boundary"
+                    );
+                }
+
+                ushort[] args = new ushort[argCount];
+                for (ushort i = 0; i < argCount; i++)
+                {
+                    args[i] = messageData[pos + 1 + i];
+                }
+
+                tokens.Add(new GSOperationToken(gsOps[opcode].Name, opcode, args));
+                pos += (uint)(1 + argCount);
+            }
+
+            if (sb.Length > 0)
+            {
+                tokens.Add(new GSStringToken(sb.ToString()));
+            }
+        }
+
+        private List<MdtEntry> ClassifyEntries(uint[] rawOffsets, uint fileMessageOffset, uint messageDataWordCount)
+        {
+            var entries = new List<MdtEntry>(rawOffsets.Length);
+
+            for (ushort i = 0; i < rawOffsets.Length; i++)
+            {
+                uint raw = rawOffsets[i];
+
+                uint wordOffset;
+                bool looksLikeMessage = false;
+
+                if (raw >= fileMessageOffset)
+                {
+                    wordOffset = (raw - fileMessageOffset) / 2;
+                    looksLikeMessage = wordOffset < messageDataWordCount;
+                }
+
+                if (looksLikeMessage)
+                {
+                    entries.Add(new MdtEntry
                     {
-                        uint offset = reader.ReadUInt32();
-                        if (offset > mdtStream.Length)
+                        Index = i,
+                        RawValue = raw,
+                        Kind = MdtEntryKind.Message,
+                        MessageWordOffset = (raw - fileMessageOffset) / 2
+                    });
+                }
+                else
+                {
+                    ushort targetMessage = (ushort)(raw >> 16);
+                    ushort byteOffsetWithinMessage = (ushort)(raw & 0xFFFF);
+
+                    uint targetMessageWordOffset = 0;
+                    if (targetMessage < rawOffsets.Length)
+                    {
+                        uint targetRaw = rawOffsets[targetMessage];
+                        if (targetRaw >= fileMessageOffset)
                         {
-                            Console.WriteLine($"Pruned invalid offset #{invalidOffsets}: {offset} > {mdtStream.Length}");
-                            messageCount--;
-                            invalidOffsets++;
+                            targetMessageWordOffset = (targetRaw - fileMessageOffset) / 2;
                         }
                     }
 
-                    // Go back to original position
-                    mdtStream.Seek(previousPos, SeekOrigin.Begin);
+                    entries.Add(new MdtEntry
+                    {
+                        Index = i,
+                        RawValue = raw,
+                        Kind = MdtEntryKind.Label,
+                        TargetMessageIndex = targetMessage,
+                        ByteOffsetWithinMessage = byteOffsetWithinMessage,
+                        LabelWordOffset = targetMessageWordOffset + (uint)(byteOffsetWithinMessage / 2)
+                    });
                 }
             }
 
-            return messageCount;
+            return entries;
         }
 
         public List<IGSToken> DecodeStream()
         {
-            List<IGSToken> tokens = new List<IGSToken>();
+            var tokens = new List<IGSToken>();
 
-            using (var reader = new BinaryReader(mdtStream))
+            using var reader = new BinaryReader(mdtStream, Encoding.UTF8, leaveOpen: true);
+            reader.BaseStream.Seek(0, SeekOrigin.Begin);
+
+            ushort messageCount = reader.ReadUInt16();
+            ushort dummy = reader.ReadUInt16();
+            uint fileMessageOffset = (uint)(4 + messageCount * 4);
+
+            uint[] rawOffsets = new uint[messageCount];
+            for (int i = 0; i < messageCount; i++)
+                rawOffsets[i] = reader.ReadUInt32();
+
+            ushort[] messageData = new ushort[(reader.BaseStream.Length - reader.BaseStream.Position) / 2];
+            for (int i = 0; i < messageData.Length; i++)
+                messageData[i] = reader.ReadUInt16();
+
+            var entries = ClassifyEntries(rawOffsets, fileMessageOffset, (uint)messageData.Length);
+            var messageEntries = entries
+                .Where(e => e.Kind == MdtEntryKind.Message)
+                .OrderBy(e => e.MessageWordOffset)
+                .ToList();
+
+            tokens.Add(new GSMessageCountToken(messageCount));
+
+            foreach (var entry in entries.Where(e => e.Kind == MdtEntryKind.Label))
             {
-                ushort count = GetMessageCount();
-                Console.WriteLine(count);
+                tokens.Add(new GSLabelToken(entry.Index, entry.TargetMessageIndex, entry.ByteOffsetWithinMessage));
+            }
 
-                // Skip dummy sized 2 bytes
-                _ = reader.ReadUInt16();
+            for (int i = 0; i < messageEntries.Count; i++)
+            {
+                uint start = messageEntries[i].MessageWordOffset;
+                uint end = (i + 1 < messageEntries.Count)
+                    ? messageEntries[i + 1].MessageWordOffset
+                    : (uint)messageData.Length;
 
-                // Obtain offset and length for messages
-                uint[] messageOffsets = new uint[count];
-                for (ushort i = 0; i < count; i++)
-                {
-                    messageOffsets[i] = reader.ReadUInt32();
-                }
-
-                // Skip invalid offsets
-                for (ushort i = 0; i < invalidOffsets; i++)
-                {
-                    _ = reader.ReadUInt32();
-                }
-
-                uint[] messageLengths = new uint[count];
-                for (ushort i = 0; i < count - 1; i++)
-                {
-                    messageLengths[i] = (messageOffsets[i + 1] - messageOffsets[i]) / sizeof(ushort);
-                }
-                messageLengths[count - 1] = (uint)(mdtStream.Length - messageOffsets[count - 1]) / sizeof(ushort);
-
-                tokens.Add(new GSMessageCountToken(count));
-
-                /*
-                 * A character in the MDT script file is represented by 2 bytes, UTF-16LE encoding
-                 * An operation and its arguments are represented by 2 bytes
-                 */
-                for (ushort i = 0; i < count; i++)
-                {
-                    StringBuilder sb = new StringBuilder();
-                    int opTimes = 0;
-                    for (uint j = 0; j < messageLengths[i] - opTimes; j++)
-                    {
-                        if (reader.BaseStream.Length - reader.BaseStream.Position < sizeof(ushort))
-                        {
-                            // Can't read anymore!
-                            return tokens;
-                        }
-
-                        ushort opOrCharacter = reader.ReadUInt16();
-                        if (opOrCharacter >= 128)
-                        {
-                            // Character, append to String token
-                            opOrCharacter -= 128;
-                            sb.Append(char.ConvertFromUtf32(opOrCharacter).Normalize(NormalizationForm.FormKC));
-                        }
-                        else
-                        {
-                            // Operation
-                            if (sb.Length > 0)
-                            {
-                                tokens.Add(new GSStringToken(sb.ToString()));
-                                sb.Clear();
-                            }
-
-                            ushort argCount = gsOps[opOrCharacter].ArgCount;
-                            ushort[] args = new ushort[argCount];
-                            for (ushort x = 0; x < argCount; x++)
-                            {
-                                args[x] = reader.ReadUInt16();
-                            }
-                            opTimes += argCount;
-                            tokens.Add(new GSOperationToken(gsOps[opOrCharacter].Name, opOrCharacter, args));
-                        }
-                    }
-
-                    if (sb.Length > 0)
-                    {
-                        tokens.Add(new GSStringToken(sb.ToString()));
-                        sb.Clear();
-                    }
-
-                    // Add message ending token
-                    tokens.Add(new GSEndMessageToken());
-                }
+                DecodeMessage(messageData, start, end, tokens);
+                tokens.Add(new GSEndMessageToken());
             }
 
             return tokens;
