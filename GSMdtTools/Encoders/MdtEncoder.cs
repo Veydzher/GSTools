@@ -285,6 +285,9 @@ namespace GSMdtTools.Encoders
             {
                 switch (token)
                 {
+                    case GSLabelToken labelToken:
+                        // todo
+                        break;
                     case GSStringToken stringToken:
                         WriteString(writer, stringToken);
                         break;
